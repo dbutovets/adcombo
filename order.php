@@ -15,6 +15,26 @@ $urlForNotJson = 'index.php';
 // Куда редиректим если всё хорошо
 $urlSuccess = 'confirm.php';
 
+function getUserIP() {
+    // Get real visitor IP behind CloudFlare network
+    if (isset($_SERVER["HTTP_CF_CONNECTING_IP"])) {
+        $_SERVER['REMOTE_ADDR'] = $_SERVER["HTTP_CF_CONNECTING_IP"];
+        $_SERVER['HTTP_CLIENT_IP'] = $_SERVER["HTTP_CF_CONNECTING_IP"];
+    }
+    $client  = @$_SERVER['HTTP_CLIENT_IP'];
+    $forward = @$_SERVER['HTTP_X_FORWARDED_FOR'];
+    $remote  = $_SERVER['REMOTE_ADDR'];
+
+    if (filter_var($client, FILTER_VALIDATE_IP)) {
+        $ip = $client;
+    } elseif (filter_var($forward, FILTER_VALIDATE_IP)) {
+        $ip = $forward;
+    } else {
+        $ip = $remote;
+    }
+
+    return $ip;
+}
 
 $isCurlEnabled = function(){
     return function_exists('curl_version');
@@ -28,11 +48,11 @@ if (!$isCurlEnabled) {
 }
 $args = [
     'api_key' => API_KEY,
-    'name' => FIO_FIELD,
-    'phone' => PHONE_FIELD,
+    'name' => $_POST[FIO_FIELD],
+    'phone' => $_POST[PHONE_FIELD],
     'offer_id' => OFFER_ID,
     'country_code' => key_exists('geo', $_POST) ? $_POST['geo'] : null,
-    'price' => INSERT PRICE FROM LANDING,
+    'price' => '49',
     'base_url' => 'http://my-domain.com/',
     'ip' => getUserIp(),
     'referrer' => 'http://my-click-site.com',
@@ -72,7 +92,7 @@ if (!empty($_REQUEST['landing_url'])) {
     $landing_url = urlencode('https://' . parse_url('https://' . urldecode($_REQUEST['landing_url']), PHP_URL_HOST) . '/pages/confirm');
 }
 
-if ($result === null) {
+if ($result === 'ok') {
     header('Location: '.$urlForEmptyRequiredFields);
     exit;
 } else {
